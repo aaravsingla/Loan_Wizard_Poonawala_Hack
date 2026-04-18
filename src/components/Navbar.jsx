@@ -3,6 +3,7 @@ const TABS = [
   { id: 'session',   label: '02 LIVE SESSION' },
   { id: 'offer',     label: '03 OFFER' },
   { id: 'analytics', label: '04 ANALYTICS' },
+  { id: 'market',    label: '05 MARKET INTEL' },
 ]
 
 export default function Navbar({ active, onChange }) {
