@@ -154,7 +154,7 @@ function RadialScore({ score, label, color, size = 70 }) {
       />
       <text x="35" y="32" textAnchor="middle" fill={color}
         fontSize="11" fontFamily="Orbitron,sans-serif" fontWeight="700">{score}</text>
-      <text x="35" y="44" textAnchor="middle" fill="rgba(107,125,143,0.8)"
+      <text x="35" y="44" textAnchor="middle" fill="rgba(70, 109, 148, 0.8)"
         fontSize="7" fontFamily="DM Mono,monospace">{label}</text>
     </svg>
   )
