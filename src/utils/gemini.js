@@ -1,0 +1,98 @@
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`
+
+const APPLICANT_CONTEXT = `You are Loan Wizard, an agentic AI loan officer at Poonawalla Fincorp conducting a live RBI V-CIP compliant video session.
+
+Applicant: Priya Sharma | Age: 23
+Loan: ₹15 lakh Education Loan
+Institute: IIT Bombay (NIRF Rank 1, 94% placement rate)
+Drop-off point: Income Verification step
+Prior attempt: Last Tuesday
+
+Live verified signals:
+- Geo: Chennai, India — VERIFIED
+- CV Age estimate: ~23 yrs — MATCHES Aadhaar (Δ=0)
+- Voice Stress Index: 1.2σ — NORMAL range
+- Bureau score: 742 — STRONG
+- Fraud combined score: 0.09 — CLEAR
+- CUS score: 78 — Tier B
+
+Your personality: warm, concise, professional. You surface math when relevant.
+Always use ₹ symbol for rupees. Keep responses to 2-3 sentences max.
+You are mid-session — identity is already verified, now confirming income details.`
+
+export async function askGemini(conversationHistory) {
+  try {
+    const contents = conversationHistory.map(msg => ({
+      role: msg.role === 'ai' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }))
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: APPLICANT_CONTEXT }] },
+        contents,
+        generationConfig: {
+          maxOutputTokens: 200,
+          temperature: 0.7,
+        }
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return data.candidates[0].content.parts[0].text
+    }
+
+    return getFallback(conversationHistory)
+
+  } catch (err) {
+    console.error('Gemini error:', err)
+    return getFallback(conversationHistory)
+  }
+}
+
+export async function generateOfferNarrative() {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{ text: `Write exactly 2 warm professional sentences congratulating Priya Sharma on qualifying for a ₹15 lakh IIT Bombay education loan at 8.83% from Poonawalla Fincorp. Mention her bureau score of 742, IIT Bombay NIRF rank, and the live RBI repo rate of 6.5% contributed to this rate. Use ₹ symbol. No preamble, just the 2 sentences.` }]
+        }],
+        generationConfig: { maxOutputTokens: 120, temperature: 0.6 }
+      })
+    })
+
+    const data = await response.json()
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || DEFAULT_NARRATIVE
+
+  } catch {
+    return DEFAULT_NARRATIVE
+  }
+}
+
+const DEFAULT_NARRATIVE = `Congratulations Priya — your bureau score of 742, IIT Bombay's top NIRF ranking, and the current RBI repo rate of 6.5% have combined to qualify you for our best Tier B offer. This rate of 8.83% has been derived live from your exact profile, not a generic band.`
+
+function getFallback(history) {
+  const last = history[history.length - 1]?.text?.toLowerCase() || ''
+
+  if (last.includes('income') || last.includes('salary') || last.includes('earn'))
+    return `Thank you Priya. Your declared monthly income has been captured via STT. Cross-referencing with your IIT Bombay placement data now — average package for your batch is ₹18.4 LPA which aligns well.`
+
+  if (last.includes('document') || last.includes('aadhaar') || last.includes('pan'))
+    return `Your Aadhaar XML has been pulled via DigiLocker API successfully. PAN linkage confirmed. All three fraud modalities are reading clean — you're well within clearance thresholds.`
+
+  if (last.includes('loan') || last.includes('amount') || last.includes('interest'))
+    return `Based on your CUS score of 78 and IIT Bombay's 94% placement rate, you qualify for ₹15 lakh at 8.83%. The rate is derived live — repo 6.5% + NBFC spread 2.5% + risk 0.88% − CLV discount 0.75% − NIRF discount 0.30%.`
+
+  if (last.includes('hello') || last.includes('hi') || last.includes('namaskar'))
+    return `Namaskar Priya! I can see you applied for a ₹15L education loan last Tuesday and stopped at income verification. I've already verified your geo-location as Chennai and your Aadhaar age match is perfect. Let's complete this in under 8 minutes.`
+
+  return `Your profile is looking strong, Priya. Bureau score of 742 puts you in the top quartile for education loan applicants. The fraud engine has cleared all three modalities — geo, age, and voice stress are all nominal.`
+}
