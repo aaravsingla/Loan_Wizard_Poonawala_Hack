@@ -381,7 +381,9 @@ export default function Dashboard({ onStartSession }) {
           <div
             className="card card-hi"
             style={{
-              padding: 28, maxWidth: 480, width: '92%',
+              padding: 18, maxWidth: 480, width: '92%',
+              maxHeight: '85vh',
+              overflowY: 'auto',
               animation: 'fadeUp 0.3s ease'
             }}
             onClick={e => e.stopPropagation()}
@@ -443,6 +445,154 @@ export default function Dashboard({ onStartSession }) {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* WhatsApp Phone Frame Mockup */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginBottom: 16
+            }}>
+              <div style={{
+                width: 280,
+                background: '#000',
+                borderRadius: 36,
+                padding: 10,
+                boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                position: 'relative'
+              }}>
+                {/* Notch */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 150,
+                  height: 25,
+                  background: '#000',
+                  borderRadius: '0 0 30px 30px',
+                  zIndex: 10
+                }} />
+
+                {/* Screen */}
+                <div style={{
+                  width: '100%',
+                  height: 420,
+                  background: '#ECE5DD',
+                  borderRadius: 30,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden'
+                }}>
+                  {/* WhatsApp Header */}
+                  <div style={{
+                    background: '#075E54',
+                    color: '#fff',
+                    padding: '12px 16px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span>Poonawalla Fincorp</span>
+                    <span style={{ fontSize: 11 }}>🔒</span>
+                  </div>
+
+                  {/* Chat Area */}
+                  <div style={{
+                    flex: 1,
+                    padding: '12px 8px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8
+                  }}>
+                    {/* Incoming message (bot) */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'flex-start'
+                    }}>
+                      <div style={{
+                        background: '#DFE7E9',
+                        color: '#000',
+                        padding: '8px 12px',
+                        borderRadius: '18px 18px 18px 0',
+                        maxWidth: '70%',
+                        fontSize: 11,
+                        lineHeight: 1.3,
+                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                      }}>
+                        Hi {modal.name.split(' ')[0]}! Your {modal.loan} application is pre-qualified. Complete your loan in 8 minutes.
+                      </div>
+                    </div>
+
+                    {/* Outgoing message (user) */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <div style={{
+                        background: '#DCF8C6',
+                        color: '#000',
+                        padding: '8px 12px',
+                        borderRadius: '18px 18px 0 18px',
+                        maxWidth: '70%',
+                        fontSize: 11,
+                        lineHeight: 1.3,
+                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                      }}>
+                        <div>Let's do this! Start the process.</div>
+                        <div style={{
+                          fontSize: 10,
+                          marginTop: 4,
+                          textAlign: 'right',
+                          color: '#666'
+                        }}>
+                          2:45 PM ✓✓
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Input Area */}
+                  <div style={{
+                    background: '#F0F0F0',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontSize: 11
+                  }}>
+                    <span style={{ color: '#075E54' }}>😊</span>
+                    <input
+                      type="text"
+                      placeholder="Message..."
+                      style={{
+                        flex: 1,
+                        border: 'none',
+                        background: '#fff',
+                        borderRadius: 18,
+                        padding: '6px 12px',
+                        fontSize: 11,
+                        color: '#000'
+                      }}
+                      disabled
+                    />
+                    <span style={{ color: '#075E54' }}>🎤</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              fontSize: 9,
+              color: 'var(--muted)',
+              textAlign: 'center',
+              marginBottom: 14,
+              fontFamily: 'DM Mono, monospace'
+            }}>
+              WhatsApp Message Preview — Green bubbles show real channel experience
             </div>
 
             <button

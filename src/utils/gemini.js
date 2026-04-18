@@ -21,42 +21,95 @@ Your personality: warm, concise, professional. You surface math when relevant.
 Always use ₹ symbol for rupees. Keep responses to 2-3 sentences max.
 You are mid-session — identity is already verified, now confirming income details.`
 
+async function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export async function askGemini(conversationHistory) {
   try {
+    // Check if API key is loaded
+    if (!API_KEY || API_KEY === '00') {
+      console.warn('Gemini API key not configured')
+      return { text: getFallback(conversationHistory), source: 'fallback' }
+    }
+
+    console.log('📡 Calling Gemini API with key:', API_KEY.slice(0, 10) + '...')
+
     const contents = conversationHistory.map(msg => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }))
 
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: APPLICANT_CONTEXT }] },
-        contents,
-        generationConfig: {
-          maxOutputTokens: 200,
-          temperature: 0.7,
-        }
-      })
-    })
-
-    const data = await response.json()
-
-    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      return data.candidates[0].content.parts[0].text
+    const requestBody = {
+      system_instruction: { parts: [{ text: APPLICANT_CONTEXT }] },
+      contents,
+      generationConfig: {
+        maxOutputTokens: 200,
+        temperature: 0.7,
+      }
     }
 
-    return getFallback(conversationHistory)
+    console.log('📦 Request body:', requestBody)
 
-  } catch (err) {
-    console.error('Gemini error:', err)
-    return getFallback(conversationHistory)
+    let retries = 3
+    while (retries > 0) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        })
+
+        console.log('📬 API Response status:', response.status)
+
+        if (response.status === 429) {
+          console.warn('⚠️ Rate limit exceeded. Retrying after delay...')
+          retries--
+          await delay(2000) // Wait for 2 seconds before retrying
+          continue
+        }
+
+        if (!response.ok) {
+          console.error('❌ API error:', response.status)
+          const errorDetails = await response.json()
+          console.error('❌ API error details:', errorDetails)
+          return { text: getFallback(conversationHistory), source: 'fallback' }
+        }
+
+        const data = await response.json()
+        console.log('✅ API Response data:', data)
+
+        if (data && data.candidates && data.candidates.length > 0) {
+          return { text: data.candidates[0].output, source: 'api' }
+        } else {
+          console.warn('⚠️ No candidates returned by API. Falling back.')
+          return { text: getFallback(conversationHistory), source: 'fallback' }
+        }
+      } catch (error) {
+        console.error('❌ Network or other error:', error)
+        retries--
+        if (retries === 0) {
+          console.error('❌ All retries failed. Falling back.')
+          return { text: getFallback(conversationHistory), source: 'fallback' }
+        }
+        console.warn('⚠️ Retrying after error...')
+        await delay(2000) // Wait for 2 seconds before retrying
+      }
+    }
+  } catch (error) {
+    console.error('❌ Unexpected error:', error)
+    return { text: getFallback(conversationHistory), source: 'fallback' }
   }
 }
 
 export async function generateOfferNarrative() {
   try {
+    // Check if API key is loaded
+    if (!API_KEY || API_KEY === '00') {
+      console.warn('Gemini API key not configured')
+      return { text: DEFAULT_NARRATIVE, source: 'fallback' }
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,11 +122,21 @@ export async function generateOfferNarrative() {
       })
     })
 
-    const data = await response.json()
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || DEFAULT_NARRATIVE
+    if (!response.ok) {
+      console.error(`API error: ${response.status} ${response.statusText}`)
+      const errorData = await response.json()
+      console.error('API response:', errorData)
+      return { text: DEFAULT_NARRATIVE, source: 'fallback' }
+    }
 
-  } catch {
-    return DEFAULT_NARRATIVE
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || DEFAULT_NARRATIVE
+    console.log('✓ Using live Gemini API for offer narrative')
+    return { text, source: text !== DEFAULT_NARRATIVE ? 'api' : 'fallback' }
+
+  } catch (err) {
+    console.error('Gemini offer narrative error:', err)
+    return { text: DEFAULT_NARRATIVE, source: 'fallback' }
   }
 }
 

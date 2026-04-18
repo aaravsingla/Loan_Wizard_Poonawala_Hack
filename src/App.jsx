@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './views/Dashboard'
+import Session from './views/Session'
+import Offer from './views/Offer'
+import Analytics from './views/Analytics'
 
 export default function App() {
   const [view, setView] = useState('dashboard')
@@ -12,16 +15,14 @@ export default function App() {
       {view === 'dashboard' && (
         <Dashboard onStartSession={() => setView('session')} />
       )}
-
-      {view !== 'dashboard' && (
-        <div style={{
-          padding: 40,
-          color: 'var(--cyan)',
-          fontFamily: 'DM Mono, monospace',
-          fontSize: 12
-        }}>
-          {view.toUpperCase()} VIEW — COMING IN NEXT STEP
-        </div>
+      {view === 'session' && (
+        <Session onOfferReady={() => setView('offer')} />
+      )}
+      {view === 'offer' && (
+        <Offer />
+      )}
+      {view === 'analytics' && (
+        <Analytics />
       )}
     </div>
   )
