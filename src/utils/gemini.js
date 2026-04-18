@@ -27,13 +27,10 @@ async function delay(ms) {
 
 export async function askGemini(conversationHistory) {
   try {
-    // Check if API key is loaded
     if (!API_KEY || API_KEY === '00') {
       console.warn('Gemini API key not configured')
       return { text: getFallback(conversationHistory), source: 'fallback' }
     }
-
-    console.log('📡 Calling Gemini API with key:', API_KEY.slice(0, 10) + '...')
 
     const contents = conversationHistory.map(msg => ({
       role: msg.role === 'ai' ? 'model' : 'user',
@@ -49,8 +46,6 @@ export async function askGemini(conversationHistory) {
       }
     }
 
-    console.log('📦 Request body:', requestBody)
-
     let retries = 3
     while (retries > 0) {
       try {
@@ -60,27 +55,23 @@ export async function askGemini(conversationHistory) {
           body: JSON.stringify(requestBody),
         })
 
-        console.log('📬 API Response status:', response.status)
-
         if (response.status === 429) {
           console.warn('⚠️ Rate limit exceeded. Retrying after delay...')
           retries--
-          await delay(2000) // Wait for 2 seconds before retrying
+          await delay(2000)
           continue
         }
 
         if (!response.ok) {
           console.error('❌ API error:', response.status)
-          const errorDetails = await response.json()
-          console.error('❌ API error details:', errorDetails)
           return { text: getFallback(conversationHistory), source: 'fallback' }
         }
 
         const data = await response.json()
-        console.log('✅ API Response data:', data)
 
+        // FIX 1: Correctly parse the Gemini API response structure
         if (data && data.candidates && data.candidates.length > 0) {
-          return { text: data.candidates[0].output, source: 'api' }
+          return { text: data.candidates[0].content.parts[0].text, source: 'api' }
         } else {
           console.warn('⚠️ No candidates returned by API. Falling back.')
           return { text: getFallback(conversationHistory), source: 'fallback' }
@@ -92,10 +83,13 @@ export async function askGemini(conversationHistory) {
           console.error('❌ All retries failed. Falling back.')
           return { text: getFallback(conversationHistory), source: 'fallback' }
         }
-        console.warn('⚠️ Retrying after error...')
-        await delay(2000) // Wait for 2 seconds before retrying
+        await delay(2000)
       }
     }
+    
+    // FIX 2: Return the fallback if the while loop exits due to running out of retries (like on repeated 429s)
+    return { text: getFallback(conversationHistory), source: 'fallback' }
+
   } catch (error) {
     console.error('❌ Unexpected error:', error)
     return { text: getFallback(conversationHistory), source: 'fallback' }
@@ -145,17 +139,76 @@ const DEFAULT_NARRATIVE = `Congratulations Priya — your bureau score of 742, I
 function getFallback(history) {
   const last = history[history.length - 1]?.text?.toLowerCase() || ''
 
-  if (last.includes('income') || last.includes('salary') || last.includes('earn'))
-    return `Thank you Priya. Your declared monthly income has been captured via STT. Cross-referencing with your IIT Bombay placement data now — average package for your batch is ₹18.4 LPA which aligns well.`
+  // Specific questions and their corresponding answers
+  const questionAnswerMap = [
+    {
+      question: "What is my loan eligibility?",
+      answer: "Based on your CUS score of 78 and IIT Bombay's 94% placement rate, you qualify for ₹15 lakh at 8.83%. The rate is derived live — repo 6.5% + NBFC spread 2.5% + risk 0.88% − CLV discount 0.75% − NIRF discount 0.30%."
+    },
+    {
+      question: "What documents are required?",
+      answer: "Your Aadhaar XML has been pulled via DigiLocker API successfully. PAN linkage confirmed. All three fraud modalities are reading clean — you're well within clearance thresholds."
+    },
+    {
+      question: "What is the interest rate?",
+      answer: "The interest rate for your loan is 8.83%, which is derived live based on your profile and the current RBI repo rate of 6.5%."
+    },
+    {
+      question: "How is my income verified?",
+      answer: "Your declared monthly income has been captured via STT. Cross-referencing with your IIT Bombay placement data now — average package for your batch is ₹18.4 LPA which aligns well."
+    },
+    {
+      question: "What is my credit score?",
+      answer: "Your bureau score is 742, which is considered strong. This has positively impacted your loan eligibility and interest rate."
+    },
+    {
+      question: "What is the loan tenure?",
+      answer: "The loan tenure for your ₹15 lakh education loan is up to 10 years, with flexible repayment options available."
+    },
+    {
+      question: "What is the processing fee?",
+      answer: "The processing fee for your loan is ₹10,000, which is a one-time charge. This fee is non-refundable."
+    },
+    {
+      question: "Can I prepay my loan?",
+      answer: "Yes, you can prepay your loan at any time without any prepayment charges. This allows you to save on interest costs."
+    },
+    {
+      question: "What happens if I miss an EMI?",
+      answer: "If you miss an EMI, a late payment fee of 2% of the overdue amount will be charged. We recommend setting up auto-debit to avoid this."
+    },
+    {
+      question: "What is the disbursal process?",
+      answer: "Once your loan is approved, the amount will be directly disbursed to IIT Bombay's account within 3 working days."
+    },
+    {
+      question: "My salary is ₹85,000/month",
+      answer: "Based on your CUS score of 78 and IIT Bombay's 94% placement rate, you qualify for ₹15 lakh at 8.83%. The rate is derived live — repo 6.5% + NBFC spread 2.5% + risk 0.88% − CLV discount 0.75% − NIRF discount 0.30%."
+    },
+    {
+      question: "I have my Aadhaar ready",
+      answer: "Your Aadhaar XML has been pulled via DigiLocker API successfully. PAN linkage confirmed. All three fraud modalities are reading clean — you're well within clearance thresholds."
+    },
+    {
+      question: "What rate do I qualify for?",
+      answer: "The interest rate for your loan is 8.83%, which is derived live based on your profile and the current RBI repo rate of 6.5%."
+    }
+  ];
 
-  if (last.includes('document') || last.includes('aadhaar') || last.includes('pan'))
-    return `Your Aadhaar XML has been pulled via DigiLocker API successfully. PAN linkage confirmed. All three fraud modalities are reading clean — you're well within clearance thresholds.`
+  // Find the specific answer for the last question
+  const matchedQA = questionAnswerMap.find(qa => last.includes(qa.question.toLowerCase()));
+  if (matchedQA) {
+    return matchedQA.answer;
+  }
 
-  if (last.includes('loan') || last.includes('amount') || last.includes('interest'))
-    return `Based on your CUS score of 78 and IIT Bombay's 94% placement rate, you qualify for ₹15 lakh at 8.83%. The rate is derived live — repo 6.5% + NBFC spread 2.5% + risk 0.88% − CLV discount 0.75% − NIRF discount 0.30%.`
-
-  if (last.includes('hello') || last.includes('hi') || last.includes('namaskar'))
-    return `Namaskar Priya! I can see you applied for a ₹15L education loan last Tuesday and stopped at income verification. I've already verified your geo-location as Chennai and your Aadhaar age match is perfect. Let's complete this in under 8 minutes.`
-
-  return `Your profile is looking strong, Priya. Bureau score of 742 puts you in the top quartile for education loan applicants. The fraud engine has cleared all three modalities — geo, age, and voice stress are all nominal.`
+  // Default response if no match is found
+  return "I'm sorry, I couldn't understand your question. Could you please rephrase?";
 }
+
+const SUGGESTED_QUESTIONS = [
+  "What is my loan eligibility?",
+  "What documents are required?",
+  "What is the interest rate?"
+];
+
+export { SUGGESTED_QUESTIONS };

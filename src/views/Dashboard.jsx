@@ -300,7 +300,6 @@ export default function Dashboard({ onStartSession }) {
             </div>
             {[
               { icon: '📨', label: 'Telegram Bot',    sub: 'Re-engagement active' },
-              { icon: '💬', label: 'WhatsApp',         sub: 'Fallback channel' },
               { icon: '📱', label: 'SMS Gateway',      sub: '2FA + link delivery' },
               { icon: '🏦', label: 'CIBIL / Experian', sub: 'Bureau live' },
               { icon: '🆔', label: 'DigiLocker API',   sub: 'Aadhaar XML pull' },

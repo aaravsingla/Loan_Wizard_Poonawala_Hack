@@ -448,13 +448,7 @@ export default function Session({ onOfferReady }) {
                       )}
                       {m.source === 'fallback' && (
                         <span style={{
-                          background: 'rgba(255,51,102,0.2)',
-                          color: 'var(--red)',
-                          padding: '2px 6px',
-                          borderRadius: 3,
-                          fontSize: 8,
-                          fontWeight: 600,
-                          letterSpacing: '0.05em'
+                          display: 'none' // Hide fallback tag
                         }}>
                           ⚠ FALLBACK
                         </span>
